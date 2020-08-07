@@ -1,33 +1,34 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # (c) Shrimadhav U K
- 
+
 # the logging things
 import logging
-logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 LOGGER = logging.getLogger(__name__)
- 
+
 import asyncio
 import json
 import math
 import os
 import shutil
 import time
-import subprocess
 from datetime import datetime
- 
+
 from tobrot import (
     DOWNLOAD_LOCATION,
     AUTH_CHANNEL
 )
- 
+
 import pyrogram
 logging.getLogger("pyrogram").setLevel(logging.WARNING)
- 
-from tobrot.helper_funcs.upload_to_tg import upload_to_tg, upload_to_gdrive
- 
- 
+
+from tobrot.helper_funcs.upload_to_tg import upload_to_tg
+
+
 async def youtube_dl_call_back(bot, update):
     LOGGER.info(update)
     cb_data = update.data
@@ -36,15 +37,7 @@ async def youtube_dl_call_back(bot, update):
     #
     current_user_id = update.message.reply_to_message.from_user.id
     current_touched_user_id = update.from_user.id
-    if current_user_id != current_touched_user_id:
-        await bot.answer_callback_query(
-            callback_query_id=update.id,
-            text="who are you? 🤪🤔🤔🤔",
-            show_alert=True,
-            cache_time=0
-        )
-        return False, None
- 
+
     user_working_dir = os.path.join(DOWNLOAD_LOCATION, str(current_user_id))
     # create download directory, if not exist
     if not os.path.isdir(user_working_dir):
@@ -92,6 +85,9 @@ async def youtube_dl_call_back(bot, update):
     if "fulltitle" in response_json:
         description = response_json["fulltitle"][0:1021]
         # escape Markdown and special characters
+    if "description" in response_json:
+        description = response_json["description"][0:1021]
+    LOGGER.info(description)
     #
     tmp_directory_for_each_user = os.path.join(
         DOWNLOAD_LOCATION,
@@ -176,48 +172,18 @@ async def youtube_dl_call_back(bot, update):
         )
         user_id = update.from_user.id
         #
-        print(tmp_directory_for_each_user)
-        if os.path.exists('blame_my_knowledge.txt'):
-            for a, b, c in os.walk(tmp_directory_for_each_user):
-                print(a)
-                for d in c:
-                    e = os.path.join(a, d)
-                    print(e)
-                    gaut_am = os.path.basename(e)
-                    print(gaut_am)
-                    liop = subprocess.Popen(["mv", f'{e}', "/app/"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    o, e = liop.communicate()
-                    print(o)
-                    print(e)
-            final_response = await upload_to_gdrive(
-                gaut_am,
-                update.message,
-                update.message.reply_to_message,
-                user_id
-            )
-        else:
-            final_response = await upload_to_tg(
-                update.message,
-                tmp_directory_for_each_user,
-                user_id,
-                {},
-                True
-            )
-          
-        '''  
         final_response = await upload_to_tg(
             update.message,
             tmp_directory_for_each_user,
             user_id,
             {},
-            True
+            True,
+            description
         )
-        '''
         LOGGER.info(final_response)
         #
         try:
             shutil.rmtree(tmp_directory_for_each_user)
-            os.remove('blame_my_knowledge.txt')
         except:
             pass
         #
